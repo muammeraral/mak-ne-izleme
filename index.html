@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <title>Makine İzleme Sistemi</title>
+   <meta charset="UTF-8">
+   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+   <style>
+       body {
+           font-family: Arial, sans-serif;
+           margin: 0;
+           padding: 20px;
+           background: #f0f2f5;
+       }
+       .dashboard {
+           display: grid;
+           grid-template-columns: repeat(2, 1fr);
+           gap: 20px;
+       }
+       .panel {
+           background: white;
+           padding: 20px;
+           border-radius: 10px;
+           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+       }
+       .full-width {
+           grid-column: 1 / -1;
+       }
+       .meter {
+           display: flex;
+           justify-content: space-between;
+           margin: 10px 0;
+           padding: 10px;
+           background: #f8f9fa;
+           border-radius: 5px;
+       }
+       .value {
+           font-size: 24px;
+           font-weight: bold;
+           color: #1a73e8;
+       }
+       .ariza {
+           color: red;
+       }
+       h2 {
+           color: #333;
+           margin-bottom: 20px;
+       }
+   </style>
+</head>
+<body>
+   <div class="dashboard">
+       <!-- Anlık Değerler -->
+       <div class="panel">
+           <h2>Anlık Değerler</h2>
+           <div class="meter">
+               <span>Devir (RPM):</span>
+               <span id="devir" class="value">0</span>
+           </div>
+           <div class="meter">
+               <span>Metre:</span>
+               <span id="metre" class="value">0</span>
+           </div>
+           <div class="meter">
+               <span>Hedef:</span>
+               <span id="hedef" class="value">1000</span>
+           </div>
+       </div>
+
+       <!-- Duruş Bilgileri -->
+       <div class="panel">
+           <h2>Duruş Bilgileri</h2>
+           <div class="meter">
+               <span>Toplam Duruş:</span>
+               <span id="durus" class="value">0 dk</span>
+           </div>
+           <div class="meter">
+               <span>Son Duruş:</span>
+               <span id="sonDurus" class="value">-</span>
+           </div>
+           <div class="meter">
+               <span>OEE:</span>
+               <span id="oee" class="value">%85</span>
+           </div>
+       </div>
+
+       <!-- Üretim Grafiği -->
+       <div class="panel full-width">
+           <h2>Saatlik Üretim</h2>
+           <canvas id="uretimGrafigi"></canvas>
+       </div>
+
+       <!-- Vardiya Bilgileri -->
+       <div class="panel">
+           <h2>Vardiya Bilgileri</h2>
+           <div class="meter">
+               <span>Vardiya:</span>
+               <span id="vardiya" class="value">1. Vardiya</span>
+           </div>
+           <div class="meter">
+               <span>Operatör:</span>
+               <span id="operator" class="value">Ahmet Y.</span>
+           </div>
+           <div class="meter">
+               <span>Verimlilik:</span>
+               <span id="verimlilik" class="value">%92</span>
+           </div>
+       </div>
+
+       <!-- Kalite Bilgileri -->
+       <div class="panel">
+           <h2>Kalite Analizi</h2>
+           <div class="meter">
+               <span>Sağlam Ürün:</span>
+               <span id="saglam" class="value">950 m</span>
+           </div>
+           <div class="meter">
+               <span>Fire:</span>
+               <span id="fire" class="value">50 m</span>
+           </div>
+           <div class="meter">
+               <span>Fire Oranı:</span>
+               <span id="fireOrani" class="value">%5</span>
+           </div>
+       </div>
+   </div>
+
+   <script>
+       // Rastgele veri üreteci
+       function rastgeleDeger(min, max) {
+           return Math.floor(Math.random() * (max - min + 1)) + min;
+       }
+
+       // Üretim grafiği
+       const uretimCtx = document.getElementById('uretimGrafigi').getContext('2d');
+       const uretimGrafigi = new Chart(uretimCtx, {
+           type: 'line',
+           data: {
+               labels: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'],
+               datasets: [{
+                   label: 'Üretim (metre)',
+                   data: [800, 920, 880, 950, 900, 930, 940, 920],
+                   borderColor: '#1a73e8',
+                   tension: 0.4,
+                   fill: true,
+                   backgroundColor: 'rgba(26, 115, 232, 0.1)'
+               }]
+           },
+           options: {
+               responsive: true,
+               plugins: {
+                   legend: {
+                       position: 'top',
+                   },
+                   title: {
+                       display: true,
+                       text: 'Saatlik Üretim Grafiği'
+                   }
+               },
+               scales: {
+                   y: {
+                       beginAtZero: true
+                   }
+               }
+           }
+       });
+
+       // Verileri güncelle
+       function verileriGuncelle() {
+           // Devir
+           const devir = rastgeleDeger(950, 1050);
+           document.getElementById('devir').textContent = devir;
+
+           // Metre
+           const metre = rastgeleDeger(800, 1200);
+           document.getElementById('metre').textContent = metre;
+
+           // Duruş kontrolü
+           if (devir < 900) {
+               const durus = rastgeleDeger(1, 10);
+               document.getElementById('durus').textContent = durus + ' dk';
+               document.getElementById('sonDurus').textContent = 'Aktif Duruş!';
+               document.getElementById('sonDurus').style.color = 'red';
+           }
+
+           // Üretim grafiği güncelleme
+           uretimGrafigi.data.datasets[0].data.shift();
+           uretimGrafigi.data.datasets[0].data.push(metre);
+           uretimGrafigi.update();
+
+           // Kalite verilerini güncelle
+           const fire = rastgeleDeger(30, 70);
+           document.getElementById('saglam').textContent = (metre - fire) + ' m';
+           document.getElementById('fire').textContent = fire + ' m';
+           document.getElementById('fireOrani').textContent = '%' + ((fire/metre)*100).toFixed(1);
+       }
+
+       // Vardiya kontrolü
+       function vardiyaKontrol() {
+           const saat = new Date().getHours();
+           if (saat >= 8 && saat < 16) {
+               document.getElementById('vardiya').textContent = '1. Vardiya';
+           } else if (saat >= 16 && saat < 24) {
+               document.getElementById('vardiya').textContent = '2. Vardiya';
+           } else {
+               document.getElementById('vardiya').textContent = '3. Vardiya';
+           }
+       }
+
+       // Her saniye güncelle
+       setInterval(verileriGuncelle, 1000);
+       setInterval(vardiyaKontrol, 60000);
+
+       // İlk yükleme
+       verileriGuncelle();
+       vardiyaKontrol();
+   </script>
+</body>
+</html>
